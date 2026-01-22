@@ -1,11 +1,12 @@
 # Infosys-Springboard-Virtual-Internship-
 Infosys Springboard Virtual Internship - Project: Budget Wise AI Driven Expense Tracker and Budget Advisor
-💸 BudgetWise AI
+**💸 BudgetWise AI**
 
 BudgetWise AI is a smart personal finance management application that helps users track expenses, visualize spending patterns, and receive AI-powered financial insights. Built with a modern React frontend and a secure Spring Boot backend, it combines clean UI, robust authentication, and intelligent recommendations.
 
-✨ Features
-🔐 Secure Authentication
+**✨ Features**
+
+**🔐 Secure Authentication**
 
 Google OAuth powered by Clerk
 
@@ -13,7 +14,7 @@ Token validation using Spring Security OAuth2 Resource Server
 
 Fully protected backend APIs
 
-🤖 AI-Powered Financial Insights
+**🤖 AI-Powered Financial Insights**
 
 Integration with Google Gemini API
 
@@ -21,7 +22,7 @@ Personalized saving tips and spending alerts
 
 Automatic detection of high-spending categories with budget suggestions
 
-📊 Interactive Visualizations
+**📊 Interactive Visualizations**
 
 Dynamic charts using Recharts
 
@@ -31,7 +32,7 @@ Category-wise spending breakdown
 
 Smooth animations with Framer Motion
 
-🧾 Transaction Management
+**🧾 Transaction Management**
 
 Full CRUD support for financial transactions
 
@@ -39,8 +40,8 @@ Reliable storage with MySQL
 
 Clean and efficient data handling via Spring Data JPA
 
-⚙️ Tech Stack
-Frontend
+**⚙️ Tech Stack**
+**Frontend**
 
 React.js
 
@@ -58,7 +59,7 @@ Lucide React
 
 VS Code
 
-Backend
+**Backend**
 
 Java (Spring Boot)
 
@@ -80,8 +81,8 @@ Google Gemini API
 
 Clerk Authentication
 
-📥 Installation & Setup
-Prerequisites
+**📥 Installation & Setup**
+**Prerequisites**
 
 Node.js & npm
 
@@ -93,7 +94,7 @@ Clerk account
 
 Google Gemini API key
 
-🖥 Backend Setup (Spring Boot)
+**🖥 Backend Setup (Spring Boot)**
 # Clone the repository
 git clone https://github.com/yourusername/budgetwise-ai.git
 
@@ -106,7 +107,7 @@ cd budgetwise-backend
 # Run the backend server
 ./mvnw spring-boot:run
 
-🌐 Frontend Setup (React)
+**🌐 Frontend Setup (React)**
 # Navigate to frontend directory
 cd budgetwise-frontend
 
