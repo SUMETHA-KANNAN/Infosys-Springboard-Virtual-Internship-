@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetWise | AI-Driven Finance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338ca;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --bg: #F3F4F6;
+            --card-bg: #ffffff;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { background-color: var(--bg); color: var(--text-main); line-height: 1.6; height: 100vh; overflow: hidden; }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); transform: translateY(-1px); }
+        .btn-danger { background-color: var(--danger); color: white; }
+        
+        /* Export Buttons */
+        .btn-group { display: flex; gap: 10px; align-items: center; }
+        .btn-outline { 
+            background: transparent; 
+            border: 1px solid #d1d5db; 
+            color: var(--text-main); 
+        }
+        .btn-outline:hover { background: #e5e7eb; border-color: #9ca3af; }
+        .btn-csv { color: var(--secondary); border-color: var(--secondary); }
+        .btn-csv:hover { background: #ecfdf5; }
+        .btn-pdf { color: var(--danger); border-color: var(--danger); }
+        .btn-pdf:hover { background: #fef2f2; }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); ring: 2px solid var(--primary); }
+
+        /* Login Screen */
+        #login-screen {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: absolute;
+            width: 100%;
+            z-index: 100;
+        }
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        /* --- DASHBOARD LAYOUT (Updated for Sidebar) --- */
+        #dashboard {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* --- SIDEBAR CSS (Added) --- */
+        .sidebar {
+            width: 260px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            border-right: 1px solid #e5e7eb;
+            z-index: 10;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #eef2ff;
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content Area */
+        .main-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            background-color: var(--bg);
+            padding: 20px;
+        }
+
+        .app-container { max-width: 1200px; margin: 0 auto; }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-left h1 { font-size: 1.5rem; }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-3px); }
+
+        .stat-card h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; }
+        .stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+
+        /* Modules */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) { 
+            .modules-grid { grid-template-columns: 1fr; } 
+            .sidebar { display: none; } /* Hide sidebar on mobile for now */
+            #dashboard { flex-direction: column; }
+            .main-scroll-area { width: 100%; }
+        }
+
+        h2 { margin-bottom: 15px; font-size: 1.25rem; border-bottom: 2px solid var(--bg); padding-bottom: 10px; }
+
+        /* Goals */
+        .goal-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--secondary);
+            width: 0%;
+            transition: width 1s ease-in-out;
+        }
+
+        /* Insights */
+        .insight-box {
+            background: #EFF6FF;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        .goal-chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        /* Action Buttons in Goal */
+        .goal-actions span {
+            cursor: pointer;
+            margin-left: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .action-add { color: var(--primary); background: #EEF2FF; }
+        .action-add:hover { background: #E0E7FF; }
+        .action-del { color: var(--danger); background: #FEF2F2; }
+        .action-del:hover { background: #FEE2E2; }
+        
+        .animate-card { animation: slideInUp 0.6s ease-out forwards; opacity: 0; }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body>
+   
+    <section id="login-screen">
+        <div class="login-card animate-card">
+            <h1 style="margin-bottom: 10px; color: var(--primary);">BudgetWise</h1>
+            <p style="margin-bottom: 20px; color: var(--text-muted);">Master your money with AI insights</p>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="email" id="email" placeholder="Email Address" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Login to Dashboard</button>
+            </form>
+        </div>
+    </section>
+
+    <section id="dashboard" class="hidden">
+        
+        <aside class="sidebar">
+            <div class="brand"><i class="fa-solid fa-chart-pie"></i> BudgetWise</div>
+            <nav style="flex: 1;">
+                <a href="index.html" class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</a>
+                <a href="module4.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+                <a href="module2.html" class="nav-item"><i class="fa-solid fa-wallet"></i> Wallet</a>
+                <!-- <a href="#" class="nav-item"><i class="fa-solid fa-bullseye"></i> Goals</a> -->
+                <a href="module3.html" class="nav-item">
+                    <i class="fa-solid fa-bullseye"></i> Goals
+                </a>
+            </nav>
+            <div class="nav-item" onclick="logout()" style="cursor: pointer; color: var(--danger);">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </div>
+        </aside>
+
+        <main class="main-scroll-area">
+            <div class="app-container" id="dashboard-content">
+                <header>
+                    <div class="header-left">
+                        <h1>Hello, <span id="user-display">User</span> 👋</h1>
+                        <p style="color: var(--text-muted);">Here is your financial overview</p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline btn-csv" onclick="exportCSV()">📄 Export CSV</button>
+                        <button class="btn btn-outline btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="card stat-card">
+                        <h3>Total Income</h3>
+                        <div class="value" id="disp-income">₹0</div>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Total Budget</h3>
+                        <div class="value" id="disp-budget" style="color: var(--warning);">₹0</div>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Total Savings</h3>
+                        <div class="value" id="disp-savings" style="color: var(--secondary);">₹0</div>
+                    </div>
+                    <div class="card stat-card">
+                        <h3>Remaining Balance</h3>
+                        <div class="value" id="disp-balance">₹0</div>
+                    </div>
+                </div>
+
+                <div class="modules-grid">
+                    
+                    <div class="left-col">
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h2>💰 Budget Manager</h2>
+                            <label>Monthly Income</label>
+                            <input type="number" id="inp-income" placeholder="e.g. 50000">
+                            
+                            <label>Category Budgets</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <input type="number" id="bdg-food" placeholder="Food">
+                                <input type="number" id="bdg-rent" placeholder="Rent">
+                                <input type="number" id="bdg-travel" placeholder="Travel">
+                                <input type="number" id="bdg-shopping" placeholder="Shopping">
+                            </div>
+                            <button class="btn btn-primary" onclick="updateFinances()" style="margin-top: 10px;">Update Finances</button>
+                        </div>
+
+                        <div class="card">
+                            <h2>📊 Spending Breakdown</h2>
+                            <div class="chart-container">
+                                <canvas id="budgetChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="right-col">
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h2>🧠 AI Insights</h2>
+                            <div id="insights-container">
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h2>🎯 Saving Goals</h2>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="goal-name" placeholder="Goal Name (e.g. Laptop)">
+                                <input type="number" id="goal-target" placeholder="Target ₹">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="goal-current" placeholder="Initial Savings ₹ (Optional)">
+                                <input type="date" id="goal-date">
+                            </div>
+                            <button class="btn btn-primary" onclick="addGoal()" style="margin-top: 5px;">Add Goal</button>
+
+                            <div id="goals-list" style="margin-top: 20px;">
+                            </div>
+
+                            <div class="goal-chart-container" id="goal-chart-wrapper" style="display:none;">
+                                <canvas id="goalsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <script>
+        // --- State Management ---
+        const defaultData = {
+            username: '',
+            income: 0,
+            budget: { food: 0, rent: 0, travel: 0, shopping: 0 },
+            goals: []
+        };
+
+        let data = JSON.parse(localStorage.getItem('budgetWiseData')) || defaultData;
+        let chartInstance = null;
+        let goalChartInstance = null;
+
+        // --- Auth Logic ---
+        const loginScreen = document.getElementById('login-screen');
+        const dashboard = document.getElementById('dashboard');
+        const loginForm = document.getElementById('login-form');
+
+        if (data.username) {
+            showDashboard();
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            data.username = user;
+            saveData();
+            showDashboard();
+        });
+
+        function showDashboard() {
+            loginScreen.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+            document.getElementById('user-display').innerText = data.username;
+            loadInputs();
+            updateUI();
+        }
+
+        function logout() {
+            localStorage.removeItem('budgetWiseData');
+            location.reload();
+        }
+
+        // --- Core Logic ---
+        function saveData() {
+            localStorage.setItem('budgetWiseData', JSON.stringify(data));
+            updateUI();
+        }
+
+        function loadInputs() {
+            document.getElementById('inp-income').value = data.income || '';
+            document.getElementById('bdg-food').value = data.budget.food || '';
+            document.getElementById('bdg-rent').value = data.budget.rent || '';
+            document.getElementById('bdg-travel').value = data.budget.travel || '';
+            document.getElementById('bdg-shopping').value = data.budget.shopping || '';
+        }
+
+        function updateFinances() {
+            data.income = Number(document.getElementById('inp-income').value);
+            data.budget.food = Number(document.getElementById('bdg-food').value);
+            data.budget.rent = Number(document.getElementById('bdg-rent').value);
+            data.budget.travel = Number(document.getElementById('bdg-travel').value);
+            data.budget.shopping = Number(document.getElementById('bdg-shopping').value);
+            saveData();
+        }
+
+        // --- Goals Logic ---
+        function addGoal() {
+            const name = document.getElementById('goal-name').value;
+            const target = Number(document.getElementById('goal-target').value);
+            const current = Number(document.getElementById('goal-current').value) || 0;
+            const date = document.getElementById('goal-date').value;
+
+            if (name && target) {
+                data.goals.push({ id: Date.now(), name, target, current, date });
+                saveData();
+                document.getElementById('goal-name').value = '';
+                document.getElementById('goal-target').value = '';
+                document.getElementById('goal-current').value = '';
+                document.getElementById('goal-date').value = '';
+            }
+        }
+
+        function deleteGoal(id) {
+            if(confirm("Are you sure you want to delete this goal?")) {
+                data.goals = data.goals.filter(g => g.id !== id);
+                saveData();
+            }
+        }
+
+        function addToGoal(id) {
+            const goal = data.goals.find(g => g.id === id);
+            if (!goal) return;
+
+            const amountStr = prompt(`Add funds to '${goal.name}'.\nCurrent: ₹${goal.current}\nEnter amount to add:`);
+            const amount = Number(amountStr);
+
+            if (amount && amount > 0) {
+                goal.current += amount;
+                saveData();
+            }
+        }
+
+        // --- UI & Charts ---
+        function updateUI() {
+            const totalBudget = Object.values(data.budget).reduce((a, b) => a + b, 0);
+            const totalSavings = data.goals.reduce((a, b) => a + b.current, 0);
+            const balance = data.income - totalBudget - totalSavings;
+
+            document.getElementById('disp-income').innerText = `₹${data.income.toLocaleString()}`;
+            document.getElementById('disp-budget').innerText = `₹${totalBudget.toLocaleString()}`;
+            document.getElementById('disp-savings').innerText = `₹${totalSavings.toLocaleString()}`;
+            document.getElementById('disp-balance').innerText = `₹${balance.toLocaleString()}`;
+
+            const goalsContainer = document.getElementById('goals-list');
+            const goalChartWrapper = document.getElementById('goal-chart-wrapper');
+            goalsContainer.innerHTML = '';
+
+            if(data.goals.length > 0) {
+                goalChartWrapper.style.display = 'block';
+                data.goals.forEach(goal => {
+                    const percent = Math.min(100, Math.round((goal.current / goal.target) * 100));
+                    goalsContainer.innerHTML += `
+                        <div class="goal-item">
+                            <div style="display:flex; justify-content:space-between;">
+                                <strong>${goal.name}</strong>
+                                <small>${goal.date}</small>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; margin-top:5px;">
+                                <span>₹${goal.current.toLocaleString()} / ₹${goal.target.toLocaleString()}</span>
+                                <div class="goal-actions">
+                                    <span class="action-add" onclick="addToGoal(${goal.id})">➕ Add Funds</span>
+                                    <span class="action-del" onclick="deleteGoal(${goal.id})">✖</span>
+                                </div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                goalChartWrapper.style.display = 'none';
+                goalsContainer.innerHTML = '<p style="color:#aaa; font-size:0.9rem; text-align:center;">No goals added yet.</p>';
+            }
+
+            generateInsights(totalBudget, balance);
+            renderChart();
+            renderGoalChart();
+        }
+
+        function generateInsights(totalBudget, balance) {
+            const container = document.getElementById('insights-container');
+            container.innerHTML = '';
+            const msgs = [];
+
+            if (data.income === 0) msgs.push("Please enter your income to unlock insights.");
+            else {
+                if (totalBudget > data.income * 0.8) msgs.push("⚠️ Warning: Your planned budget exceeds 80% of your income.");
+                if (balance < 0) msgs.push("🚫 Alert: You are in a deficit! Reduce your budget immediately.");
+                if (balance > data.income * 0.2) msgs.push("✅ Good job! You have >20% surplus available to save.");
+                if (data.budget.food > data.income * 0.3) msgs.push("🍔 You are planning to spend a lot on Food (>30%).");
+            }
+
+            if (msgs.length === 0) msgs.push("Everything looks good! Keep it up.");
+
+            msgs.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'insight-box';
+                div.innerText = msg;
+                container.appendChild(div);
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Food', 'Rent', 'Travel', 'Shopping'],
+                    datasets: [{
+                        data: [data.budget.food, data.budget.rent, data.budget.travel, data.budget.shopping],
+                        backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'right' } }
+                }
+            });
+        }
+
+        function renderGoalChart() {
+            if(data.goals.length === 0) return;
+            const ctx = document.getElementById('goalsChart').getContext('2d');
+            if (goalChartInstance) goalChartInstance.destroy();
+            const labels = data.goals.map(g => g.name);
+            const currentData = data.goals.map(g => g.current);
+            const targetData = data.goals.map(g => g.target);
+
+            goalChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Saved', data: currentData, backgroundColor: '#10B981', borderRadius: 4 },
+                        { label: 'Target', data: targetData, backgroundColor: '#E5E7EB', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+
+        // --- Export Functions ---
+
+        // 1. Export to CSV
+        function exportCSV() {
+            // Build CSV Content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // Section 1: Summary
+            csvContent += "--- FINANCIAL SUMMARY ---\n";
+            csvContent += `User,${data.username}\n`;
+            csvContent += `Monthly Income,${data.income}\n\n`;
+
+            // Section 2: Budget
+            csvContent += "--- PLANNED BUDGET ---\nCategory,Amount\n";
+            csvContent += `Food,${data.budget.food}\n`;
+            csvContent += `Rent,${data.budget.rent}\n`;
+            csvContent += `Travel,${data.budget.travel}\n`;
+            csvContent += `Shopping,${data.budget.shopping}\n\n`;
+
+            // Section 3: Goals
+            csvContent += "--- SAVING GOALS ---\nGoal Name,Target Amount,Current Savings,Deadline\n";
+            data.goals.forEach(g => {
+                csvContent += `${g.name},${g.target},${g.current},${g.date}\n`;
+            });
+
+            // Trigger Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "BudgetWise_Report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 2. Export to PDF
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const content = document.getElementById("dashboard-content");
+            const btn = document.querySelector('.btn-pdf');
+            
+            // Visual feedback
+            const originalText = btn.innerText;
+            btn.innerText = "Generating...";
+            
+            try {
+                // Capture the container
+                const canvas = await html2canvas(content, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Initialize PDF (A4 Portrait)
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                // Calculate dimensions to fit A4
+                const imgProps = pdf.getImageProperties(imgData);
+                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                // Add Image
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+                pdf.save("BudgetWise_Dashboard.pdf");
+            } catch (error) {
+                console.error("PDF Error:", error);
+                alert("Could not generate PDF.");
+            } finally {
+                btn.innerText = originalText;
+            }
+        }
+    </script>
+</body>
+</html>

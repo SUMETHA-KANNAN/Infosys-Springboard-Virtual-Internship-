@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetWise - Financial Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --secondary: #10B981;
+            --accent: #F59E0B;
+            --danger: #EF4444;
+            --dark: #1F2937;
+            --light: #F3F4F6;
+            --white: #FFFFFF;
+            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+            --border: #E5E7EB;
+            --text-sub: #6B7280;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
+        /* --- LAYOUT UPDATES FOR SIDEBAR --- */
+        body { 
+            background-color: #f8fafc; 
+            color: var(--dark); 
+            height: 100vh; 
+            display: flex; /* Makes sidebar and content sit side-by-side */
+            overflow: hidden; /* Prevents body scroll, inner container scrolls instead */
+        }
+
+        /* --- SIDEBAR CSS --- */
+        .sidebar {
+            width: 260px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            border-right: 1px solid #e5e7eb;
+            z-index: 10;
+            flex-shrink: 0; /* Prevents sidebar from shrinking */
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #eef2ff;
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* --- MAIN CONTENT CONTAINER --- */
+        .container { 
+            flex: 1; /* Takes remaining width */
+            max-width: 100%; /* Overrides previous max-width constraint */
+            padding: 2rem; 
+            overflow-y: auto; /* Adds scroll to this area only */
+            height: 100vh;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-up { animation: fadeIn 0.6s ease-out forwards; }
+
+        /* --- 1. Top Bar --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 2rem; background: var(--white); padding: 1.5rem;
+            border-radius: 16px; box-shadow: var(--shadow); flex-wrap: wrap; gap: 1rem;
+        }
+        .header-title h1 { font-size: 1.5rem; font-weight: 700; color: var(--dark); }
+        .header-title p { font-size: 0.9rem; color: #6B7280; }
+
+        .filters { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+        
+        .date-select {
+            padding: 0.5rem 1rem; border: 1px solid var(--border);
+            border-radius: 8px; background: #F9FAFB; color: var(--dark);
+            font-weight: 500; outline: none; cursor: pointer;
+        }
+        .balance-badge {
+            background: #ECFDF5; color: var(--secondary); padding: 0.5rem 1rem;
+            border-radius: 8px; font-weight: 700; font-size: 1.1rem; border: 1px solid #A7F3D0;
+        }
+
+        /* --- Export Buttons --- */
+        .btn-export {
+            display: flex; align-items: center; gap: 5px;
+            padding: 0.5rem 1rem; border: 1px solid var(--dark);
+            border-radius: 8px; background: transparent; color: var(--dark);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+        }
+        .btn-export:hover { background: var(--dark); color: white; }
+        .btn-export.pdf-btn { border-color: var(--danger); color: var(--danger); }
+        .btn-export.pdf-btn:hover { background: var(--danger); color: white; }
+        .btn-export.csv-btn { border-color: var(--secondary); color: var(--secondary); }
+        .btn-export.csv-btn:hover { background: var(--secondary); color: white; }
+
+        /* --- 2. Input Section --- */
+        .input-section {
+            background: var(--white); padding: 1.5rem; border-radius: 16px;
+            box-shadow: var(--shadow); margin-bottom: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem; align-items: end; border-left: 5px solid var(--primary);
+        }
+        .input-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: #6B7280; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border);
+            border-radius: 8px; background: #F9FAFB; outline: none; transition: 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus { border-color: var(--primary); background: #fff; }
+        
+        .btn-add {
+            background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; height: 48px;
+        }
+        .btn-add:hover { background: #4338ca; transform: translateY(-2px); }
+
+        /* --- 3. Dashboard Grid --- */
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        .card {
+            background: var(--white); padding: 1.5rem; border-radius: 16px;
+            box-shadow: var(--shadow); position: relative;
+        }
+        .card-lg { grid-column: 1 / -1; }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .chart-container { position: relative; height: 300px; width: 100%; }
+
+        /* --- 4. AI Panel --- */
+        .ai-panel {
+            grid-column: 1 / -1; background: linear-gradient(135deg, #4F46E5 0%, #818CF8 100%);
+            color: white; padding: 1.5rem; border-radius: 16px; display: flex;
+            align-items: center; justify-content: space-between; margin-top: 1.5rem;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .sidebar { display: none; } /* Hide sidebar on small screens */
+            .dashboard-grid { grid-template-columns: 1fr; }
+            header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .filters { width: 100%; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="brand"><i class="fa-solid fa-chart-pie"></i> BudgetWise</div>
+        <nav style="flex: 1;">
+            <a href="index.html" class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</a>
+            <a href="module4.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+            <a href="module2.html" class="nav-item"><i class="fa-solid fa-wallet"></i> Wallet</a>
+            <!-- <a href="#" class="nav-item"><i class="fa-solid fa-bullseye"></i> Goals</a> -->
+            <a href="module3.html" class="nav-item">
+                <i class="fa-solid fa-bullseye"></i> Goals
+            </a>
+        </nav>
+        <div class="nav-item" onclick="app.logout()" style="cursor: pointer; color: var(--danger);">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </div>
+    </aside>
+
+    <div class="container" id="dashboard-container">
+        
+        <header class="animate-up">
+            <div class="header-title">
+                <h1>Financial Trends & Visualization</h1>
+                <p>Track your spending patterns and income balance</p>
+            </div>
+            <div class="filters">
+                <button class="btn-export csv-btn" onclick="exportCSV()">📄 CSV</button>
+                <button class="btn-export pdf-btn" onclick="exportPDF()">⬇ PDF</button>
+                
+                <div style="width: 1px; height: 30px; background: #e5e7eb; margin: 0 10px;"></div>
+
+                <select class="date-select">
+                    <option>January</option>
+                    <option>February</option>
+                    <option>March</option>
+                </select>
+                <div class="balance-badge" id="displayBalance">₹0</div>
+            </div>
+        </header>
+
+        <div class="input-section animate-up" style="animation-delay: 0.1s;">
+            <div class="input-group">
+                <label>Type</label>
+                <select id="inputType">
+                    <option value="expense">Expense 💸</option>
+                    <option value="income">Income 💰</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Category</label>
+                <select id="inputCategory">
+                    <option value="Food">Food 🍔</option>
+                    <option value="Rent">Rent 🏠</option>
+                    <option value="Travel">Travel 🚗</option>
+                    <option value="Shopping">Shopping 🛍️</option>
+                    <option value="Utilities">Utilities 💡</option>
+                    <option value="Salary">Salary 💵</option>
+                    <option value="Other">Other 📦</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="inputAmount" placeholder="e.g. 1500">
+            </div>
+            <button class="btn-add" onclick="addTransaction()">+ Add Data</button>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <div class="card card-lg animate-up" style="animation-delay: 0.2s;">
+                <div class="card-title">📊 Monthly Spending Trend</div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card animate-up" style="animation-delay: 0.3s;">
+                <div class="card-title">🥧 Category-Wise Spending</div>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card animate-up" style="animation-delay: 0.4s;">
+                <div class="card-title">💰 Income vs Expenses</div>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="balanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="ai-panel animate-up" style="animation-delay: 0.5s;">
+                <div class="ai-content">
+                    <h3 style="margin-bottom:0.5rem">🤖 AI Budget Advisor</h3>
+                    <div id="aiTips"><span>• Start adding data to see insights...</span></div>
+                </div>
+                <div style="font-size: 2rem;">💡</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Data Store (Enhanced for Export) ---
+        let appData = {
+            income: 0,
+            expense: 0,
+            categories: { 'Food': 0, 'Rent': 0, 'Travel': 0, 'Shopping': 0, 'Utilities': 0, 'Other': 0 },
+            history: [], // Stores just amounts for chart
+            transactions: [] // Stores full objects for CSV: {date, type, category, amount}
+        };
+
+        // --- 2. Chart Variables ---
+        let trendChart, categoryChart, balanceChart;
+
+        function initCharts() {
+            // Trend Chart
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: [], 
+                    datasets: [{
+                        label: 'Transaction History',
+                        data: [],
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Category Chart
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(appData.categories),
+                    datasets: [{
+                        data: Object.values(appData.categories),
+                        backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Balance Chart
+            const ctxBal = document.getElementById('balanceChart').getContext('2d');
+            balanceChart = new Chart(ctxBal, {
+                type: 'bar',
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        label: 'Amount (₹)',
+                        data: [0, 0],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderRadius: 8,
+                        barThickness: 50
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // --- 3. Logic to Add Data ---
+        function addTransaction() {
+            const type = document.getElementById('inputType').value;
+            const category = document.getElementById('inputCategory').value;
+            const amountVal = document.getElementById('inputAmount').value;
+            const amount = parseFloat(amountVal);
+
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount");
+                return;
+            }
+
+            // Current Timestamp for CSV
+            const now = new Date();
+            const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+
+            // Store Detailed Transaction for Export
+            appData.transactions.push({
+                date: dateStr,
+                type: type,
+                category: type === 'income' ? 'Income' : category,
+                amount: amount
+            });
+
+            // Update Calculations
+            if (type === 'income') {
+                appData.income += amount;
+            } else {
+                appData.expense += amount;
+                if (appData.categories[category] !== undefined) {
+                    appData.categories[category] += amount;
+                } else {
+                    appData.categories['Other'] += amount;
+                }
+                // Add to history for Trend Chart (Expenses only generally, or total flow)
+                appData.history.push(amount);
+            }
+
+            // Clear Input
+            document.getElementById('inputAmount').value = '';
+            
+            // Trigger Updates
+            updateVisuals();
+        }
+
+        // --- 4. Update Charts & UI ---
+        function updateVisuals() {
+            // Update Balance Badge
+            const balance = appData.income - appData.expense;
+            const balanceEl = document.getElementById('displayBalance');
+            balanceEl.innerText = `₹${balance}`;
+            balanceEl.style.color = balance >= 0 ? '#10B981' : '#EF4444';
+            balanceEl.style.borderColor = balance >= 0 ? '#A7F3D0' : '#FECACA';
+            balanceEl.style.background = balance >= 0 ? '#ECFDF5' : '#FEF2F2';
+
+            // Update Bar Chart
+            balanceChart.data.datasets[0].data = [appData.income, appData.expense];
+            balanceChart.update();
+
+            // Update Pie Chart
+            categoryChart.data.datasets[0].data = Object.values(appData.categories);
+            categoryChart.update();
+
+            // Update Trend Chart
+            if (appData.history.length > 0) {
+                trendChart.data.labels.push(`Txn ${appData.history.length}`);
+                trendChart.data.datasets[0].data.push(appData.history[appData.history.length - 1]);
+                trendChart.update();
+            }
+
+            // Update AI Insights
+            updateAI(balance);
+        }
+
+        function updateAI(balance) {
+            let tipsHTML = '';
+            const savingsRate = appData.income > 0 ? Math.round(((appData.income - appData.expense) / appData.income) * 100) : 0;
+
+            if (appData.expense > appData.income) {
+                tipsHTML = `<span>⚠️ <strong>Alert:</strong> You are overspending by ₹${Math.abs(balance)}. Cut down on non-essentials.</span>`;
+            } else if (savingsRate > 20) {
+                tipsHTML = `<span>✅ <strong>Great Job!</strong> You're saving ${savingsRate}% of your income.</span>`;
+            } else {
+                tipsHTML = `<span>📊 <strong>Status:</strong> Your budget is balanced, but try to save more.</span>`;
+            }
+            document.getElementById('aiTips').innerHTML = tipsHTML;
+        }
+
+        // --- 5. Export Functionality ---
+
+        // CSV Export Function
+        function exportCSV() {
+            if (appData.transactions.length === 0) {
+                alert("No data to export!");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Date,Type,Category,Amount\n"; // Header
+
+            appData.transactions.forEach(row => {
+                csvContent += `${row.date},${row.type},${row.category},${row.amount}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "budget_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // PDF Export Function
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const dashboard = document.getElementById('dashboard-container');
+            
+            // Visual Feedback
+            const btn = document.querySelector('.pdf-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Generating...";
+
+            try {
+                // Capture the container
+                const canvas = await html2canvas(dashboard, { scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+                
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save("budget_dashboard.pdf");
+            } catch (err) {
+                console.error("PDF Error:", err);
+                alert("Could not generate PDF.");
+            } finally {
+                btn.innerText = originalText;
+            }
+        }
+
+        window.addEventListener('load', initCharts);
+    </script>
+</body>
+</html>

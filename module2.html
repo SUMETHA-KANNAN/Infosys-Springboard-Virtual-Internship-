@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense & Income Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- GLOBAL & SIDEBAR CSS --- */
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; } /* Hidden overflow on body to allow sidebar fix */
+        
+        /* Sidebar Container */
+        .sidebar {
+            width: 260px; 
+            background: white; 
+            display: flex; 
+            flex-direction: column;
+            padding: 1.5rem; 
+            border-right: 1px solid #e5e7eb; 
+            z-index: 10;
+            height: 100vh;
+            flex-shrink: 0;
+        }
+
+        /* Logo area */
+        .brand { 
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: #4f46e5; /* Primary Color */
+            margin-bottom: 3rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+
+        /* Nav Links */
+        .nav-item {
+            padding: 1rem; 
+            margin-bottom: 0.5rem; 
+            border-radius: 10px; 
+            color: #64748b; /* Text Sub */
+            text-decoration: none; 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        /* Hover & Active */
+        .nav-item:hover, .nav-item.active { 
+            background: #eef2ff; 
+            color: #4f46e5; 
+            transform: translateX(5px); 
+        }
+
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* Animation Classes */
+        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .list-item-enter { animation: slideIn 0.4s ease-out forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        
+        /* Hide sidebar on small screens */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body class="flex h-screen bg-slate-50">
+
+    <aside class="sidebar">
+        <div class="brand"><i class="fa-solid fa-chart-pie"></i> BudgetWise</div>
+        <nav style="flex: 1;">
+            <a href="index.html" class="nav-item active"><i class="fa-solid fa-house"></i> Dashboard</a>
+                <a href="module4.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+                <a href="module2.html" class="nav-item"><i class="fa-solid fa-wallet"></i> Wallet</a>
+                <!-- <a href="#" class="nav-item"><i class="fa-solid fa-bullseye"></i> Goals</a> -->
+                <a href="module3.html" class="nav-item">
+                    <i class="fa-solid fa-bullseye"></i> Goals
+                </a>
+        </nav>
+        
+        <div class="nav-item" onclick="alert('Logging out...')" style="cursor: pointer; color: #ef4444;">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-4 md:p-8">
+        
+        <div class="max-w-6xl mx-auto fade-in">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">Expense & Income Tracker</h1>
+                    <p class="text-slate-500">Track your income, control expenses, and manage your budget smartly</p>
+                </div>
+                <select class="bg-white border border-slate-200 rounded-lg px-4 py-2 shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option>October 2023</option>
+                    <option selected>November 2023</option>
+                    <option>December 2023</option>
+                </select>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500 card-hover">
+                    <p class="text-sm text-slate-500 font-medium">Total Income</p>
+                    <h2 class="text-2xl font-bold text-slate-800 mt-1">$<span id="income-val">5,200.00</span></h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500 card-hover">
+                    <p class="text-sm text-slate-500 font-medium">Total Expenses</p>
+                    <h2 class="text-2xl font-bold text-slate-800 mt-1">$<span id="expense-val">1,840.50</span></h2>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500 card-hover">
+                    <p class="text-sm text-slate-500 font-medium">Net Balance</p>
+                    <h2 class="text-2xl font-bold text-slate-800 mt-1">$<span id="balance-val">3,359.50</span></h2>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-8">
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-lg font-semibold mb-4 text-slate-700">Add New Transaction</h3>
+                        <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="number" id="amount" placeholder="Amount ($)" class="p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400 transition-all" required>
+                            <select id="type" class="p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                                <option value="income">Income</option>
+                                <option value="expense">Expense</option>
+                            </select>
+                            <select id="category" class="p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                                <option>Salary</option>
+                                <option>Food</option>
+                                <option>Rent</option>
+                                <option>Travel</option>
+                                <option>Entertainment</option>
+                            </select>
+                            <input type="date" id="date" class="p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                            <div class="md:col-span-2">
+                                <button type="submit" class="w-full bg-slate-800 text-white py-3 rounded-xl font-semibold hover:bg-slate-700 active:scale-[0.98] transition-all shadow-lg shadow-slate-200">
+                                    Add Transaction
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100">
+                            <h3 class="text-lg font-semibold text-slate-700">Recent Transactions</h3>
+                        </div>
+                        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                                    <tr>
+                                        <th class="px-6 py-4">Date</th>
+                                        <th class="px-6 py-4">Category</th>
+                                        <th class="px-6 py-4">Type</th>
+                                        <th class="px-6 py-4">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transaction-list">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="space-y-8">
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-lg font-semibold mb-4 text-slate-700">Expense Breakdown</h3>
+                        <canvas id="expenseChart" height="300"></canvas>
+                    </section>
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="text-lg font-semibold mb-4 text-slate-700">Income vs Expense</h3>
+                        <canvas id="barChart" height="200"></canvas>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initial Data & Chart Setup
+        const ctxPie = document.getElementById('expenseChart').getContext('2d');
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+
+        const expenseChart = new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: ['Rent', 'Food', 'Travel', 'Others'],
+                datasets: [{
+                    data: [1200, 300, 200, 140],
+                    backgroundColor: ['#3b82f6', '#f97316', '#8b5cf6', '#94a3b8'],
+                    borderWidth: 0
+                }]
+            },
+            options: { cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const barChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Oct', 'Nov'],
+                datasets: [
+                    { label: 'Income', data: [4800, 5200], backgroundColor: '#22c55e' },
+                    { label: 'Expense', data: [2100, 1840], backgroundColor: '#ef4444' }
+                ]
+            }
+        });
+
+        // Form Logic
+        const form = document.getElementById('transaction-form');
+        const list = document.getElementById('transaction-list');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const type = document.getElementById('type').value;
+            const category = document.getElementById('category').value;
+            const date = document.getElementById('date').value || new Date().toLocaleDateString();
+
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-slate-50 list-item-enter';
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm text-slate-600">${date}</td>
+                <td class="px-6 py-4 text-sm font-medium text-slate-700">${category}</td>
+                <td class="px-6 py-4">
+                    <span class="px-2 py-1 text-xs rounded-full ${type === 'income' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} uppercase font-bold">
+                        ${type}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm font-bold ${type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                    ${type === 'income' ? '+' : '-'}$${parseFloat(amount).toLocaleString()}
+                </td>
+            `;
+            list.prepend(tr);
+            form.reset();
+        });
+    </script>
+</body>
+</html>
